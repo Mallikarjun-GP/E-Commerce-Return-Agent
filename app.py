@@ -59,6 +59,9 @@ for item in orders():
         "Customer": item["customer_name"],
         "Category": item["category"],
         "Price": rupees(item["amount_inr"]),
+        "Qty": item["quantity"],
+        "Payment": item["payment_method"],
+        "City": item["city"],
         "Delivered": f'{item["days_since_delivery"]} days ago',
         "Status": return_status,
     })
@@ -142,11 +145,12 @@ with right:
             with st.container(border=True):
                 st.subheader(order["product"])
                 st.caption(f'{order["order_id"]} · {order["customer_name"]} · {order["category"]}')
-                a, b, c = st.columns(3)
+                a, b, c, d = st.columns(4)
                 a.metric("Order value", rupees(order["amount_inr"]))
                 b.metric("Delivered", f'{order["days_since_delivery"]} days ago')
                 c.metric("Earlier returns", str(result.get("history", {}).get("prior_returns", "—")))
-                st.write(f'**Reason:** {result["reason"]}')
+                d.metric("Qty ordered", str(order["quantity"]))
+                st.write(f'**Reason:** {result["reason"]}  ·  **Payment:** {order["payment_method"]}  ·  **Ship to:** {order["city"]}, {order["state"]}')
 
         if "risk" in result:
             with st.container(border=True):

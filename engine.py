@@ -29,6 +29,13 @@ def orders() -> list[dict[str, Any]]:
         row["amount_inr"] = int(row["amount_inr"])
         row["days_since_delivery"] = int(row["days_since_delivery"])
         row["previously_returned"] = row["previously_returned"].lower() == "true"
+        # Extended fields from the Kaggle-style retail dataset
+        row["quantity"] = int(row.get("quantity") or 1)
+        row["shipping_days"] = int(row.get("shipping_days") or 0)
+        row["payment_method"] = row.get("payment_method", "")
+        row["city"] = row.get("city", "")
+        row["state"] = row.get("state", "")
+        row["return_reason"] = row.get("return_reason", "")
     return rows
 
 
