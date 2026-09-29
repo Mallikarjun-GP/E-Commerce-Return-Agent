@@ -1,0 +1,13 @@
+order_id,customer_id,customer_name,product,category,amount_inr,status,days_since_delivery,previously_returned
+ORD-1001,C-101,Ananya Rao,Wireless Mouse,Electronics,1299,Delivered,7,false
+ORD-1002,C-101,Ananya Rao,Desk Lamp,Home,1899,Delivered,55,false
+ORD-1003,C-101,Ananya Rao,Notebook Set,Stationery,499,Delivered,83,false
+ORD-1004,C-101,Ananya Rao,Water Bottle,Home,699,Delivered,112,false
+ORD-2001,C-202,Rohan Mehta,Headphones,Electronics,3499,Delivered,90,true
+ORD-2002,C-202,Rohan Mehta,Backpack,Fashion,2199,Delivered,75,true
+ORD-2003,C-202,Rohan Mehta,Smartwatch,Electronics,7999,Delivered,48,true
+ORD-2004,C-202,Rohan Mehta,Shoes,Fashion,2999,Delivered,36,true
+ORD-2005,C-202,Rohan Mehta,Tablet,Electronics,15999,Delivered,5,false
+ORD-3001,C-303,Meera Shah,Coffee Maker,Home,4999,Delivered,45,false
+ORD-3002,C-303,Meera Shah,Travel Mug,Home,899,Delivered,72,false
+ORD-4001,C-404,Dev Patel,Ebook,Digital,399,Delivered,2,false
