@@ -12,10 +12,17 @@ import bcrypt
 from pymongo import MongoClient
 from pymongo.collection import Collection
 
-MONGO_URI = os.getenv(
-    "MONGO_URI",
-    "mongodb://localhost:27017/",
-)
+def _get_mongo_uri() -> str:
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets") and "MONGO_URI" in st.secrets:
+            return str(st.secrets["MONGO_URI"])
+    except Exception:
+        pass
+    return os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+
+
+MONGO_URI = _get_mongo_uri()
 DB_NAME = "ecommerce_returns"
 DATA_FILE = Path(__file__).parent / "data" / "orders.csv"
 
