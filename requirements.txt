@@ -2,3 +2,6 @@ streamlit>=1.64,<2
 langchain>=1,<2
 langgraph>=1,<2
 langchain-openrouter>=0.1,<1
+pymongo>=4,<5
+bcrypt>=4,<6
+dnspython>=2.7,<3

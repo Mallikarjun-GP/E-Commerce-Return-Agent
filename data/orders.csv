@@ -4279,3 +4279,6 @@ ORD-5277,C-2838,Sunita Verma,Headphones,Electronics,3995,3,Cash on Delivery,Deli
 ORD-5278,C-2838,Sunita Verma,Jacket,Fashion,3423,2,Debit Card,Delivered,3,Surat,Uttar Pradesh,429,False,
 ORD-5279,C-2838,Sunita Verma,Jeans,Fashion,1956,2,Debit Card,Delivered,2,Nagpur,Karnataka,570,True,Quality not as expected
 ORD-5280,C-2838,Sunita Verma,Sticky Notes,Stationery,185,3,UPI,Delivered,2,Lucknow,Rajasthan,328,False,
+USR-RAM1-0001,ram12345678,Ram,Wireless Noise-Cancelling Headphones,Electronics,7999,1,Online UPI,Delivered,3,Bangalore,Karnataka,0,True,Product is defective / damaged
+USR-RAM1-0002,ram12345678,Ram,Mechanical Gaming Keyboard RGB,Electronics,3499,1,Online UPI,Delivered,3,Bangalore,Karnataka,45,False,
+USR-RAM1-0001,ram123,Ram,Mechanical Gaming Keyboard RGB,Electronics,3499,1,Online UPI,Delivered,3,Bangalore,Karnataka,45,False,

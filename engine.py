@@ -15,33 +15,65 @@ from langchain_openrouter import ChatOpenRouter
 from langgraph.graph import END, START, StateGraph
 
 
+from db import get_order_by_id, get_user_orders
+
 DATA_FILE = Path(__file__).parent / "data" / "orders.csv"
 RETURN_WINDOW_DAYS = 30
 REVIEW_THRESHOLD = 60
 DEFAULT_OPENROUTER_MODEL = "openrouter/free"
 
 
-@lru_cache(maxsize=1)
+def _mongo_to_engine_order(doc: dict) -> dict[str, Any]:
+    """Normalize a MongoDB user order doc into the engine order schema."""
+    product_name = ", ".join(i.get("product_name", "") for i in doc.get("items", [])) or "Item"
+    category = doc["items"][0].get("category", "General") if doc.get("items") else "General"
+    qty = sum(i.get("qty", 1) for i in doc.get("items", []))
+    return {
+        "order_id": doc["order_id"],
+        "customer_id": doc.get("username", ""),
+        "customer_name": doc.get("customer_name", doc.get("username", "")),
+        "product": product_name,
+        "category": category,
+        "amount_inr": int(doc.get("total_inr", 0)),
+        "quantity": qty,
+        "payment_method": doc.get("payment_method", "Online UPI"),
+        "status": doc.get("status", "Delivered"),
+        "shipping_days": doc.get("shipping_days", 3),
+        "city": doc.get("city", "Bangalore"),
+        "state": doc.get("state", "Karnataka"),
+        "days_since_delivery": int(doc.get("days_since_delivery", 0)),
+        "previously_returned": bool(doc.get("previously_returned", False)),
+        "return_reason": doc.get("return_reason", ""),
+    }
+
+
 def orders() -> list[dict[str, Any]]:
-    with DATA_FILE.open(newline="", encoding="utf-8") as source:
-        rows = list(csv.DictReader(source))
-    for row in rows:
-        row["amount_inr"] = int(row["amount_inr"])
-        row["days_since_delivery"] = int(row["days_since_delivery"])
-        row["previously_returned"] = row["previously_returned"].lower() == "true"
-        # Extended fields from the Kaggle-style retail dataset
-        row["quantity"] = int(row.get("quantity") or 1)
-        row["shipping_days"] = int(row.get("shipping_days") or 0)
-        row["payment_method"] = row.get("payment_method", "")
-        row["city"] = row.get("city", "")
-        row["state"] = row.get("state", "")
-        row["return_reason"] = row.get("return_reason", "")
+    rows: list[dict[str, Any]] = []
+    if DATA_FILE.exists():
+        with DATA_FILE.open(newline="", encoding="utf-8") as source:
+            rows = list(csv.DictReader(source))
+        for row in rows:
+            row["amount_inr"] = int(row["amount_inr"]) if str(row.get("amount_inr", "")).isdigit() else 0
+            row["days_since_delivery"] = int(row["days_since_delivery"]) if str(row.get("days_since_delivery", "")).isdigit() else 0
+            row["previously_returned"] = str(row.get("previously_returned", "")).lower() == "true"
+            row["quantity"] = int(row.get("quantity") or 1)
+            row["shipping_days"] = int(row.get("shipping_days") or 0)
+            row["payment_method"] = row.get("payment_method", "")
+            row["city"] = row.get("city", "")
+            row["state"] = row.get("state", "")
+            row["return_reason"] = row.get("return_reason", "")
     return rows
 
 
 @tool
 def lookup_order(order_id: str) -> dict[str, Any]:
-    """Look up an order by its exact order ID in the local demo dataset."""
+    """Look up an order by its exact order ID in MongoDB or local demo dataset."""
+    try:
+        mongo_doc = get_order_by_id(order_id)
+        if mongo_doc:
+            return _mongo_to_engine_order(mongo_doc)
+    except Exception:
+        pass
     return next((row.copy() for row in orders() if row["order_id"] == order_id), {})
 
 
@@ -51,13 +83,13 @@ def check_eligibility(order_id: str) -> dict[str, Any]:
     order = lookup_order.invoke({"order_id": order_id})
     if not order:
         return {"eligible": False, "reason": "Order not found."}
-    if order["status"] != "Delivered":
+    if order.get("status") != "Delivered":
         return {"eligible": False, "reason": "The order has not been delivered."}
-    if order["category"] == "Digital":
+    if order.get("category") == "Digital":
         return {"eligible": False, "reason": "Digital products are excluded in this demo policy."}
-    if order["days_since_delivery"] > RETURN_WINDOW_DAYS:
+    if int(order.get("days_since_delivery", 0)) > RETURN_WINDOW_DAYS:
         return {"eligible": False, "reason": "The 30-day return window has passed."}
-    if order["previously_returned"]:
+    if order.get("previously_returned"):
         return {"eligible": False, "reason": "This order was already returned."}
     return {"eligible": True, "reason": "Delivered within 30 days and eligible for return."}
 
@@ -65,14 +97,33 @@ def check_eligibility(order_id: str) -> dict[str, Any]:
 @tool
 def customer_history(customer_id: str, current_order_id: str) -> dict[str, Any]:
     """Summarize a customer's earlier orders and returns, excluding the current order."""
+    combined_orders: dict[str, dict[str, Any]] = {}
+    
+    # 1. MongoDB orders
+    try:
+        mongo_orders = get_user_orders(customer_id)
+        for doc in mongo_orders:
+            oid = doc.get("order_id")
+            if oid:
+                combined_orders[oid] = _mongo_to_engine_order(doc)
+    except Exception:
+        pass
+
+    # 2. CSV orders
+    for row in orders():
+        if row.get("customer_id") == customer_id:
+            oid = row.get("order_id")
+            if oid and oid not in combined_orders:
+                combined_orders[oid] = row
+
     current = lookup_order.invoke({"order_id": current_order_id})
+    cur_days = int(current.get("days_since_delivery", 0)) if current else 0
+
     prior = [
-        row for row in orders()
-        if row["customer_id"] == customer_id
-        and row["order_id"] != current_order_id
-        and row["days_since_delivery"] > current["days_since_delivery"]
+        o for o in combined_orders.values()
+        if o.get("order_id") != current_order_id
     ]
-    returns = sum(row["previously_returned"] for row in prior)
+    returns = sum(1 for o in prior if o.get("previously_returned"))
     count = len(prior)
     return {
         "prior_orders": count,
@@ -133,7 +184,20 @@ def _lookup(state: ReturnState) -> ReturnState:
 
 
 def _eligibility(state: ReturnState) -> ReturnState:
-    result = check_eligibility.invoke({"order_id": state["order_id"]})
+    order = state.get("order")
+    if order:
+        if order.get("status") != "Delivered":
+            result = {"eligible": False, "reason": "The order has not been delivered."}
+        elif order.get("category") == "Digital":
+            result = {"eligible": False, "reason": "Digital products are excluded in this demo policy."}
+        elif int(order.get("days_since_delivery", 0)) > RETURN_WINDOW_DAYS:
+            result = {"eligible": False, "reason": "The 30-day return window has passed."}
+        elif order.get("previously_returned"):
+            result = {"eligible": False, "reason": "This order was already returned."}
+        else:
+            result = {"eligible": True, "reason": "Delivered within 30 days and eligible for return."}
+    else:
+        result = check_eligibility.invoke({"order_id": state["order_id"]})
     return _step(state, "Eligibility check", result["reason"], eligibility=result)
 
 
