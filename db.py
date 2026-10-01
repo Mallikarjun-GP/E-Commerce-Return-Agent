@@ -19,7 +19,21 @@ def _get_mongo_uri() -> str:
             return str(st.secrets["MONGO_URI"])
     except Exception:
         pass
-    return os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+    uri = os.getenv("MONGO_URI")
+    if uri:
+        return uri
+    env_file = Path(__file__).parent / ".env"
+    if env_file.exists():
+        try:
+            for line in env_file.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if line.startswith("MONGO_URI="):
+                    val = line.split("=", 1)[1].strip().strip('"').strip("'")
+                    if val:
+                        return val
+        except Exception:
+            pass
+    return "mongodb://localhost:27017/"
 
 
 MONGO_URI = _get_mongo_uri()

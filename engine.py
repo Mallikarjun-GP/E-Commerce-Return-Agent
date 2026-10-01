@@ -6,7 +6,7 @@ import csv
 import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 from langchain.agents import create_agent
 from langchain.tools import tool
@@ -175,7 +175,11 @@ class ReturnState(TypedDict, total=False):
 
 
 def _step(state: ReturnState, name: str, detail: str, **updates: Any) -> ReturnState:
-    return {"trace": state.get("trace", []) + [{"step": name, "detail": detail}], **updates}
+    new_trace = list(state.get("trace", [])) + [{"step": name, "detail": detail}]
+    result = dict(state)
+    result["trace"] = new_trace
+    result.update(updates)
+    return cast(ReturnState, result)
 
 
 def _lookup(state: ReturnState) -> ReturnState:
