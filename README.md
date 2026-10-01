@@ -1,26 +1,27 @@
-# E-commerce Returns Agent MVP
+# E-commerce Returns Agent & Shop
 
-A small working class demo based on the project deck. It uses 12 synthetic orders, LangChain tools, a LangGraph workflow, and an OpenRouter powered investigation agent. Pick an order from the grid, choose a return reason, and process it. The UI shows tool calls, the decision path, and a simulated refund or human review.
+An intelligent e-commerce return processing platform powered by **LangChain**, **LangGraph**, **Streamlit**, and **MongoDB**. The platform includes a full shopping storefront, user authentication, orders dashboard, and an agentic AI return decision engine that evaluates return policies, customer history, fraud/risk heuristics, and OpenRouter-powered reasoning.
 
-## Run
+## Features
+- 🛒 **Storefront & Cart**: Browse products by category, manage cart, and place orders with instant MongoDB synchronization.
+- 📦 **Order Tracking**: Real-time order status, cancellation, and returns management.
+- 🤖 **Agentic Return Workflow**: Multi-step LangGraph workflow (`lookup_order` → `check_eligibility` → `customer_history` → `score_return_risk` → AI investigation).
+- 🗄️ **MongoDB & CSV Sync**: Seamless data layer supporting MongoDB Atlas alongside CSV data.
 
-The project needs Python 3.11 or newer. This workspace already has a ready-to-use `.venv` with Python 3.12 and all dependencies installed. To run it here:
+## Configuration & Setup
 
-```bash
-source .venv/bin/activate
-streamlit run app.py
+### 1. Database Configuration
+Create a `.env` or `.streamlit/secrets.toml` file in the project root:
+
+```env
+MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/
 ```
 
-To create the environment again on another machine, use its Python 3.11+ executable:
-
+### 2. Run Locally
 ```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
 pip install -r requirements.txt
 streamlit run app.py
 ```
-
-Open the local URL printed by Streamlit (usually `http://localhost:8501`). No API key is needed.
 
 ## Connect the AI
 
